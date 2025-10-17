@@ -1,8 +1,7 @@
-# Next.js SaaS Starter
+# Next.js SaaS Starter — Cloudflare Workers (OpenNext)
 
-This is a starter template for building a SaaS application using **Next.js** with support for authentication, Stripe integration for payments, and a dashboard for logged-in users.
-
-**Demo: [https://next-saas-start.vercel.app/](https://next-saas-start.vercel.app/)**
+Run the Next.js SaaS starter on **Cloudflare Workers** using **OpenNext** with **Cloudflare D1** as the database. 
+The template keeps the Stripe-powered subscription flow, auth, RBAC, and dashboard from the original Vercel project, but is tuned for the Cloudflare platform.
 
 ## Features
 
@@ -18,8 +17,9 @@ This is a starter template for building a SaaS application using **Next.js** wit
 
 ## Tech Stack
 
-- **Framework**: [Next.js](https://nextjs.org/)
-- **Database**: [Postgres](https://www.postgresql.org/)
+- **Runtime**: [Cloudflare Workers](https://developers.cloudflare.com/workers/) via [OpenNext](https://github.com/opennextjs/opennext)
+- **Framework**: [Next.js 15](https://nextjs.org/)
+- **Database**: [Cloudflare D1](https://developers.cloudflare.com/d1/)
 - **ORM**: [Drizzle](https://orm.drizzle.team/)
 - **Payments**: [Stripe](https://stripe.com/)
 - **UI Library**: [shadcn/ui](https://ui.shadcn.com/)
@@ -27,26 +27,39 @@ This is a starter template for building a SaaS application using **Next.js** wit
 ## Getting Started
 
 ```bash
-git clone https://github.com/nextjs/saas-starter
-cd saas-starter
+git clone https://github.com/<your-org>/cf-saas-starter
+cd cf-saas-starter
 pnpm install
 ```
 
+## Requirements
+
+- `pnpm`
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) authenticated (`wrangler login`)
+- Cloudflare account with D1 enabled
+- Stripe account + [Stripe CLI](https://docs.stripe.com/stripe-cli) for local testing (optional but recommended)
+
 ## Running Locally
 
-[Install](https://docs.stripe.com/stripe-cli) and log in to your Stripe account:
+[Install](https://docs.stripe.com/stripe-cli) and log in to your Stripe account (optional, only required for local webhooks/payments):
 
 ```bash
 stripe login
 ```
 
-Use the included setup script to create your `.env` file:
+Authenticate Wrangler so the script can provision D1 resources:
+
+```bash
+wrangler login
+```
+
+Use the included setup script to create your `.env` file and (optionally) create a D1 database:
 
 ```bash
 pnpm db:setup
 ```
 
-Run the database migrations and seed the database with a default user and team:
+Run the database migrations (via the D1 HTTP driver) and seed the database with the default user/team:
 
 ```bash
 pnpm db:migrate
@@ -60,7 +73,7 @@ This will create the following user and team:
 
 You can also create new users through the `/sign-up` route.
 
-Finally, run the Next.js development server:
+Finally, run the Next.js development server for the modern dev workflow:
 
 ```bash
 pnpm dev
@@ -72,6 +85,12 @@ You can listen for Stripe webhooks locally through their CLI to handle subscript
 
 ```bash
 stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+If you prefer to exercise the full Worker runtime locally you can also use:
+
+```bash
+pnpm preview       # Builds with OpenNext, then runs wrangler dev
 ```
 
 ## Testing Payments
@@ -86,27 +105,34 @@ To test Stripe payments, use the following test card details:
 
 When you're ready to deploy your SaaS application to production, follow these steps:
 
+### Deploy to Cloudflare
+
+1. Build the OpenNext output and deploy with the included CLI script:
+
+   ```bash
+   pnpm deploy
+   ```
+
+   This wraps `opennextjs-cloudflare` and publishes to Cloudflare Workers/Pages.
+
+2. Alternatively, you can push the `.open-next` artifacts to your own deployment pipeline and run `wrangler deploy`.
+
+### Configure environment variables & bindings
+
+Set the following in the Cloudflare dashboard (Workers > your deployment > Settings > Variables) or via `wrangler secret put`:
+
+- `BASE_URL`: e.g. `https://yourdomain.com`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `AUTH_SECRET`
+
+And ensure your Worker has the D1 binding created during setup (defaults to `DB`). If you created the database manually, update `wrangler.jsonc` accordingly and redeploy.
+
 ### Set up a production Stripe webhook
 
 1. Go to the Stripe Dashboard and create a new webhook for your production environment.
 2. Set the endpoint URL to your production API route (e.g., `https://yourdomain.com/api/stripe/webhook`).
 3. Select the events you want to listen for (e.g., `checkout.session.completed`, `customer.subscription.updated`).
-
-### Deploy to Vercel
-
-1. Push your code to a GitHub repository.
-2. Connect your repository to [Vercel](https://vercel.com/) and deploy it.
-3. Follow the Vercel deployment process, which will guide you through setting up your project.
-
-### Add environment variables
-
-In your Vercel project settings (or during deployment), add all the necessary environment variables. Make sure to update the values for the production environment, including:
-
-1. `BASE_URL`: Set this to your production domain.
-2. `STRIPE_SECRET_KEY`: Use your Stripe secret key for the production environment.
-3. `STRIPE_WEBHOOK_SECRET`: Use the webhook secret from the production webhook you created in step 1.
-4. `POSTGRES_URL`: Set this to your production database URL.
-5. `AUTH_SECRET`: Set this to a random string. `openssl rand -base64 32` will generate one.
 
 ## Other Templates
 
