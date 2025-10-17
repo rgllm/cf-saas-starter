@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db } from '@/lib/db/drizzle';
+import { getDb } from '@/lib/db/drizzle';
 import { users, teams, teamMembers } from '@/lib/db/schema';
 import { setSession } from '@/lib/auth/session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,6 +7,7 @@ import { stripe } from '@/lib/payments/stripe';
 import Stripe from 'stripe';
 
 export async function GET(request: NextRequest) {
+  const db = await getDb();
   const searchParams = request.nextUrl.searchParams;
   const sessionId = searchParams.get('session_id');
 

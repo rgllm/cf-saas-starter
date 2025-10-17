@@ -1,10 +1,11 @@
 import { desc, and, eq, isNull } from 'drizzle-orm';
-import { db } from './drizzle';
+import { getDb } from './drizzle';
 import { activityLogs, teamMembers, teams, users } from './schema';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/session';
 
 export async function getUser() {
+  const db = await getDb();
   const sessionCookie = (await cookies()).get('session');
   if (!sessionCookie || !sessionCookie.value) {
     return null;
@@ -37,6 +38,7 @@ export async function getUser() {
 }
 
 export async function getTeamByStripeCustomerId(customerId: string) {
+  const db = await getDb();
   const result = await db
     .select()
     .from(teams)
@@ -55,6 +57,7 @@ export async function updateTeamSubscription(
     subscriptionStatus: string;
   }
 ) {
+  const db = await getDb();
   await db
     .update(teams)
     .set({
@@ -65,6 +68,7 @@ export async function updateTeamSubscription(
 }
 
 export async function getUserWithTeam(userId: number) {
+  const db = await getDb();
   const result = await db
     .select({
       user: users,
@@ -79,6 +83,7 @@ export async function getUserWithTeam(userId: number) {
 }
 
 export async function getActivityLogs() {
+  const db = await getDb();
   const user = await getUser();
   if (!user) {
     throw new Error('User not authenticated');
@@ -105,6 +110,7 @@ export async function getTeamForUser() {
     return null;
   }
 
+  const db = await getDb();
   const result = await db.query.teamMembers.findFirst({
     where: eq(teamMembers.userId, user.id),
     with: {

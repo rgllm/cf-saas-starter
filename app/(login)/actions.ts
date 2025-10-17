@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { and, eq, sql } from 'drizzle-orm';
-import { db } from '@/lib/db/drizzle';
+import { getDb } from '@/lib/db/drizzle';
 import {
   User,
   users,
@@ -32,6 +32,7 @@ async function logActivity(
   type: ActivityType,
   ipAddress?: string
 ) {
+  const db = await getDb();
   if (teamId === null || teamId === undefined) {
     return;
   }
@@ -50,6 +51,7 @@ const signInSchema = z.object({
 });
 
 export const signIn = validatedAction(signInSchema, async (data, formData) => {
+  const db = await getDb();
   const { email, password } = data;
 
   const userWithTeam = await db
@@ -107,6 +109,7 @@ const signUpSchema = z.object({
 });
 
 export const signUp = validatedAction(signUpSchema, async (data, formData) => {
+  const db = await getDb();
   const { email, password, inviteId } = data;
 
   const existingUser = await db
@@ -237,6 +240,7 @@ const updatePasswordSchema = z.object({
 export const updatePassword = validatedActionWithUser(
   updatePasswordSchema,
   async (data, _, user) => {
+    const db = await getDb();
     const { currentPassword, newPassword, confirmPassword } = data;
 
     const isPasswordValid = await comparePasswords(
@@ -295,6 +299,7 @@ const deleteAccountSchema = z.object({
 export const deleteAccount = validatedActionWithUser(
   deleteAccountSchema,
   async (data, _, user) => {
+    const db = await getDb();
     const { password } = data;
 
     const isPasswordValid = await comparePasswords(password, user.passwordHash);
@@ -346,6 +351,7 @@ const updateAccountSchema = z.object({
 export const updateAccount = validatedActionWithUser(
   updateAccountSchema,
   async (data, _, user) => {
+    const db = await getDb();
     const { name, email } = data;
     const userWithTeam = await getUserWithTeam(user.id);
 
@@ -365,6 +371,7 @@ const removeTeamMemberSchema = z.object({
 export const removeTeamMember = validatedActionWithUser(
   removeTeamMemberSchema,
   async (data, _, user) => {
+    const db = await getDb();
     const { memberId } = data;
     const userWithTeam = await getUserWithTeam(user.id);
 
@@ -399,6 +406,7 @@ const inviteTeamMemberSchema = z.object({
 export const inviteTeamMember = validatedActionWithUser(
   inviteTeamMemberSchema,
   async (data, _, user) => {
+    const db = await getDb();
     const { email, role } = data;
     const userWithTeam = await getUserWithTeam(user.id);
 

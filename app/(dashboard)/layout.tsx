@@ -16,7 +16,8 @@ import { useRouter } from 'next/navigation';
 import { User } from '@/lib/db/schema';
 import useSWR, { mutate } from 'swr';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher: (url: string) => Promise<User> = (url) =>
+	fetch(url).then((res) => res.json())
 
 function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
